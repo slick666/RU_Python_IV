@@ -24,6 +24,22 @@ LAB_JSON Learning Objective: Learn to navigate a JSON file and convert to a
 
 # see https://docs.python.org/2/library/urllib2.html for more info on urllib2
 # example use of urllib2 to get a web resource:
-import urllib2
-data = urllib2.urlopen("https://api.github.com/")
-print("{}".format(data.read()))
+import urllib2, json
+import sys
+
+from random import sample
+data = json.loads(urllib2.urlopen("https://api.github.com/").read())
+emoji_data = json.loads(urllib2.urlopen(data[u'emojis_url']).read())
+
+print("Random Emoji\n%s" % sample(emoji_data, 1))
+
+username = input("Enter the Username you with to check: ")
+
+user_result = json.loads(urllib2.urlopen(data[u'user_url'].format(user=username)).read())
+
+if "message" in user_result:
+    print("There was an error getting that user's information\n%s" % user_result["message"])
+    sys.exit(1)
+
+print()
+

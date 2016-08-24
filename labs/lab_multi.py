@@ -33,6 +33,8 @@ LAB_multi Learning Objective: Learn to use the multiprocessing and multithreadin
 Note: add args as necessary to the skeleton functions below
 """
 
+import argparse
+
 # Don't change this function
 
 
@@ -61,9 +63,11 @@ def generate_work(num_items):
 # Add your code down here
 
 
-def worker():
+def worker(input_q, output_q):
     """This is the thread/process main function that will implement c. above"""
-    pass
+    while True:
+        output_q.put(work_task(input_q.get()))
+        input_q.task_done()
 
 
 def create_workers():
@@ -71,5 +75,44 @@ def create_workers():
     per step d. above"""
     pass
 
+
+def main(args):
+    work = generate_work(args.items)
+
+    if args.process:
+        from multiprocessing import Pool
+        pool = Pool(processes=args.workers)
+        print(pool.map(work_task, work, chunksize=1))
+
+    elif args.thread:
+        from threading import Thread
+        import Queue
+        input_q = Queue.Queue()
+        output_q = Queue.Queue()
+        for item in work:
+            input_q .put(item)
+        for i in range(args.workers):
+            t = Thread(target=worker, args=(input_q, output_q))
+            t.daemon = True
+            t.start()
+        input_q.join()
+        print([output_q.get() for _ in range(len(work))])
+
+
 if __name__ == "__main__":
-    pass
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        '-p', '--process', help='Use multiprocessing', action='store_true', default=False
+    )
+    group.add_argument(
+        '-t', '--thread', help='Use threading', action='store_true', default=False
+    )
+    parser.add_argument(
+        '-w', '--workers', help='Number of workers to spawn', type=int, default=20
+    )
+    parser.add_argument(
+        '-i', '--items', help='number of items to process', type=int, default=20
+    )
+    config = parser.parse_args()
+    main(config)
